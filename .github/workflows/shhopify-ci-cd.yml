@@ -98,7 +98,7 @@ jobs:
                 'locations' => [
                   {
                     'physicalLocation' => {
-                      'artifactLocation' => { 'uri' => file },
+                      'artifactLocation' => { 'uri' => file.gsub(%r{^/}, '') },
                       'region' => {
                         'startLine' => line,
                         'startColumn' => column
