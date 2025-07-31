@@ -47,6 +47,61 @@ jobs:
           mkdir -p reports
           theme-check --fail-level error --output json > reports/theme-check-report.json || echo "Lint completed"
 
+      - name: Convert JSON to SARIF
+        run: |
+          echo '{
+            "version": "2.1.0",
+            "runs": [
+              {
+                "tool": {
+                  "driver": {
+                    "name": "theme-check",
+                    "informationUri": "https://github.com/Shopify/theme-check",
+                    "rules": []
+                  }
+                },
+                "results": []
+              }
+            ]
+          }' > reports/theme-check.sarif
+
+          ruby -rjson -e "
+            data = JSON.parse(File.read('reports/theme-check-report.json'))
+            sarif = JSON.parse(File.read('reports/theme-check.sarif'))
+            rules = {}
+            sarif['runs'][0]['results'] = data.map.with_index do |issue, i|
+              rules[issue['check']] ||= {
+                'id' => issue['check'],
+                'name' => issue['check'],
+                'shortDescription' => { 'text' => issue['message'] }
+              }
+              {
+                'ruleId' => issue['check'],
+                'level' => issue['severity'],
+                'message' => { 'text' => issue['message'] },
+                'locations' => [
+                  {
+                    'physicalLocation' => {
+                      'artifactLocation' => { 'uri' => issue['file'] },
+                      'region' => {
+                        'startLine' => issue['line'] || 1,
+                        'startColumn' => issue['column'] || 1
+                      }
+                    }
+                  }
+                ]
+              }
+            end
+            sarif['runs'][0]['tool']['driver']['rules'] = rules.values
+            File.write('reports/theme-check.sarif', JSON.pretty_generate(sarif))
+          "
+
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: reports/theme-check.sarif
+      
+
       - name: Upload Lint Report
         uses: actions/upload-artifact@v4
         with:
