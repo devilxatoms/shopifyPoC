@@ -45,6 +45,36 @@ jobs:
             --allow-live \
             --json
 
+  deploy-qa-theme:
+    name: Push Theme to QA
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/qa')
+
+    environment: qa
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Shopify CLI
+        run: npm install -g @shopify/cli
+
+      - name: Push theme to Shopify
+        env:
+          SHOPIFY_FLAG_STORE: ${{ vars.SHOPIFY_FLAG_STORE }}
+          SHOPIFY_CLI_THEME_TOKEN: ${{ secrets.SHOPIFY_CLI_THEME_TOKEN }}
+          SHOPIFY_FLAG_THEME_ID: ${{ secrets.SHOPIFY_FLAG_THEME_ID }}
+          SHOPIFY_FLAG_FORCE: 1
+        run: |
+          shopify theme push \
+            --store $SHOPIFY_FLAG_STORE \
+            --password $SHOPIFY_CLI_THEME_TOKEN \
+            --theme $SHOPIFY_FLAG_THEME_ID \
+            --allow-live \
+            --json
 
   deploy-prod-theme:
     name: Push & Publish Theme
@@ -80,7 +110,7 @@ jobs:
       - name: Publish theme (only on main)
         if: github.ref == 'refs/heads/main'
         env:
-          SHOPIFY_FLAG_STORE: ${{ secrets.SHOPIFY_FLAG_STORE }}
+          SHOPIFY_FLAG_STORE: ${{ vars.SHOPIFY_FLAG_STORE }}
           SHOPIFY_CLI_THEME_TOKEN: ${{ secrets.SHOPIFY_CLI_THEME_TOKEN }}
           SHOPIFY_FLAG_THEME_ID: ${{ secrets.SHOPIFY_FLAG_THEME_ID }}
           SHOPIFY_FLAG_FORCE:      1
