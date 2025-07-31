@@ -76,12 +76,16 @@ jobs:
             levels = { 'error' => 'error', 'warning' => 'warning', 'info' => 'note', 'style' => 'note' }
 
             rules = {}
-            sarif['runs'][0]['results'] = data.map.with_index do |issue, i|
+            sarif['runs'][0]['results'] = data.map do |issue|
               rule_id = issue['check'].to_s
               severity = issue['severity'].to_s.downcase
               level = levels[severity] || 'note'
               message = issue['message'].to_s
-              file = issue['file'].to_s
+
+              file = issue['file'].to_s.strip
+              file = 'unknown_file.liquid' if file.empty?
+              file = file.gsub(%r{^/}, '') # elimina slash inicial si lo hay
+
               line = issue['line'].to_i > 0 ? issue['line'].to_i : 1
               column = issue['column'].to_i > 0 ? issue['column'].to_i : 1
 
@@ -98,7 +102,10 @@ jobs:
                 'locations' => [
                   {
                     'physicalLocation' => {
-                      'artifactLocation' => { 'uri' => file.gsub(%r{^/}, '') },
+                      'artifactLocation' => {
+                        'uri' => file,
+                        'uriBaseId' => '%SRCROOT%' # 💡 importante para que GitHub sepa resolver el path
+                      },
                       'region' => {
                         'startLine' => line,
                         'startColumn' => column
@@ -112,7 +119,6 @@ jobs:
             sarif['runs'][0]['tool']['driver']['rules'] = rules.values
             File.write('reports/theme-check.sarif', JSON.pretty_generate(sarif))
           "
-
 
       - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
