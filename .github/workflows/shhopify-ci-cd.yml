@@ -1,4 +1,4 @@
-name: Deploy Shopify Theme
+name: Deploy Shopify Theme to - "${{ github.ref }}"
 
 on:
   push:
