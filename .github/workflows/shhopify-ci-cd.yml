@@ -53,7 +53,8 @@ jobs:
 
       - name: Convert JSON to SARIF
         run: |
-          echo '{
+          cat <<'EOF' > reports/theme-check.sarif
+          {
             "version": "2.1.0",
             "runs": [
               {
@@ -67,64 +68,76 @@ jobs:
                 "results": []
               }
             ]
-          }' > reports/theme-check.sarif
+          }
+          EOF
 
-          ruby -rjson -e "
-            data = JSON.parse(File.read('reports/theme-check-report.json'))
-            sarif = JSON.parse(File.read('reports/theme-check.sarif'))
+          ruby -rjson -e '
+            data = JSON.parse(File.read("reports/theme-check-report.json"))
+            sarif = JSON.parse(File.read("reports/theme-check.sarif"))
 
-            levels = { 'error' => 'error', 'warning' => 'warning', 'info' => 'note', 'style' => 'note' }
+            # Ajusta esto si quieres que severity 2 sea "note" en vez de "warning"
+            def sarif_level(sev)
+              case sev.to_i
+              when 0 then "note"     # p. ej. info / baja prioridad
+              when 1 then "warning"  # sugerencias / advertencias
+              when 2 then "warning"  # estilo / formato (puedes cambiar a "note" si lo prefieres)
+              else "note"
+              end
+            end
+
             rules = {}
             results = []
 
-            data.each do |issue|
-              rule_id = issue['check'].to_s.strip
-              rule_id = 'theme-check-generic' if rule_id.empty?
+            data.each do |file_obj|
+              path = file_obj["path"].to_s.strip
+              path = path.gsub(%r{^/}, "")
+              path = "layout/theme.liquid" if path.empty?
 
-              severity = issue['severity'].to_s.downcase
-              level = levels[severity] || 'note'
+              (file_obj["offenses"] || []).each do |off|
+                rule_id = off["check"].to_s.strip
+                rule_id = "theme-check-generic" if rule_id.empty?
 
-              message = issue['message'].to_s.strip
-              message = 'Theme Check reported an issue.' if message.empty?
+                level = sarif_level(off["severity"])
 
-              file = issue['file'].to_s.strip
-              file = file.gsub(%r{^/}, '')
-              file = 'layout/theme.liquid' if file.empty?
+                message = off["message"].to_s.strip
+                message = "Theme Check reported an issue." if message.empty?
 
-              line = issue['line'].to_i > 0 ? issue['line'].to_i : 1
-              column = issue['column'].to_i > 0 ? issue['column'].to_i : 1
+                start_line = off["start_row"].to_i > 0 ? off["start_row"].to_i : 1
+                start_column = off["start_column"].to_i > 0 ? off["start_column"].to_i : 1
 
-              rules[rule_id] ||= {
-                'id' => rule_id,
-                'name' => rule_id,
-                'shortDescription' => { 'text' => message }
-              }
+                rules[rule_id] ||= {
+                  "id" => rule_id,
+                  "name" => rule_id,
+                  "shortDescription" => { "text" => message }
+                }
 
-              results << {
-                'ruleId' => rule_id,
-                'level' => level,
-                'message' => { 'text' => message },
-                'locations' => [
-                  {
-                    'physicalLocation' => {
-                      'artifactLocation' => {
-                        'uri' => file,
-                        'uriBaseId' => '%SRCROOT%'
-                      },
-                      'region' => {
-                        'startLine' => line,
-                        'startColumn' => column
+                results << {
+                  "ruleId" => rule_id,
+                  "level" => level,
+                  "message" => { "text" => message },
+                  "locations" => [
+                    {
+                      "physicalLocation" => {
+                        "artifactLocation" => {
+                          "uri" => path,
+                          "uriBaseId" => "%SRCROOT%"
+                        },
+                        "region" => {
+                          "startLine" => start_line,
+                          "startColumn" => start_column
+                        }
                       }
                     }
-                  }
-                ]
-              }
+                  ]
+                }
+              end
             end
 
-            sarif['runs'][0]['tool']['driver']['rules'] = rules.values
-            sarif['runs'][0]['results'] = results
-            File.write('reports/theme-check.sarif', JSON.pretty_generate(sarif))
-          "
+            sarif["runs"][0]["tool"]["driver"]["rules"] = rules.values
+            sarif["runs"][0]["results"] = results
+            File.write("reports/theme-check.sarif", JSON.pretty_generate(sarif))
+          '
+
 
 
       - name: Upload SARIF to GitHub Security tab
