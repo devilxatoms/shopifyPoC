@@ -68,33 +68,47 @@ jobs:
           ruby -rjson -e "
             data = JSON.parse(File.read('reports/theme-check-report.json'))
             sarif = JSON.parse(File.read('reports/theme-check.sarif'))
+
+            levels = { 'error' => 'error', 'warning' => 'warning', 'info' => 'note', 'style' => 'note' }
+
             rules = {}
             sarif['runs'][0]['results'] = data.map.with_index do |issue, i|
-              rules[issue['check']] ||= {
-                'id' => issue['check'],
-                'name' => issue['check'],
-                'shortDescription' => { 'text' => issue['message'] }
+              rule_id = issue['check'].to_s
+              severity = issue['severity'].to_s.downcase
+              level = levels[severity] || 'note'
+              message = issue['message'].to_s
+              file = issue['file'].to_s
+              line = issue['line'].to_i > 0 ? issue['line'].to_i : 1
+              column = issue['column'].to_i > 0 ? issue['column'].to_i : 1
+
+              rules[rule_id] ||= {
+                'id' => rule_id,
+                'name' => rule_id,
+                'shortDescription' => { 'text' => message }
               }
+
               {
-                'ruleId' => issue['check'],
-                'level' => issue['severity'],
-                'message' => { 'text' => issue['message'] },
+                'ruleId' => rule_id,
+                'level' => level,
+                'message' => { 'text' => message },
                 'locations' => [
                   {
                     'physicalLocation' => {
-                      'artifactLocation' => { 'uri' => issue['file'] },
+                      'artifactLocation' => { 'uri' => file },
                       'region' => {
-                        'startLine' => issue['line'] || 1,
-                        'startColumn' => issue['column'] || 1
+                        'startLine' => line,
+                        'startColumn' => column
                       }
                     }
                   }
                 ]
               }
             end
+
             sarif['runs'][0]['tool']['driver']['rules'] = rules.values
             File.write('reports/theme-check.sarif', JSON.pretty_generate(sarif))
           "
+
 
       - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
