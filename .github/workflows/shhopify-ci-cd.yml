@@ -35,7 +35,7 @@ jobs:
         env:
           SHOPIFY_FLAG_STORE: ${{ secrets.SHOPIFY_FLAG_STORE }}
           SHOPIFY_CLI_THEME_TOKEN: ${{ secrets.SHOPIFY_CLI_THEME_TOKEN }}
-          SHOPIFY_FLAG_THEME_ID: ${{ env.SHOPIFY_FLAG_THEME_ID }}
+          SHOPIFY_FLAG_THEME_ID: ${{ vars.SHOPIFY_FLAG_THEME_ID }}
           SHOPIFY_FLAG_FORCE: 1
         run: |
           shopify theme push \
