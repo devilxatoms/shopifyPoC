@@ -45,4 +45,5 @@ jobs:
           shopify theme publish \
             --store $SHOPIFY_FLAG_STORE \
             --password $SHOPIFY_CLI_THEME_TOKEN \
-            --theme $SHOPIFY_FLAG_THEME_ID 
+            --theme $SHOPIFY_FLAG_THEME_ID \
+            --allow-live
