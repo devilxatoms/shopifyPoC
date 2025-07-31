@@ -7,10 +7,11 @@ on:
     branches:
       - main
       - develop
-      - feature/*
+      - qa
   pull_request:
     branches:
       - main
+      - qa
       - develop
 
 
