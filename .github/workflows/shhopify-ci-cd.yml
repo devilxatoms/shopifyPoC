@@ -7,15 +7,15 @@ on:
 
 jobs:
   deploy-theme:
-    name: Push & (optionally) Publish Theme
+    name: Push & Publish Theme
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    environment: production
 
-      - name: Set up Node.js 20
-        uses: actions/setup-node@v4
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
@@ -27,11 +27,8 @@ jobs:
           SHOPIFY_FLAG_STORE: ${{ secrets.SHOPIFY_FLAG_STORE }}
           SHOPIFY_CLI_THEME_TOKEN: ${{ secrets.SHOPIFY_CLI_THEME_TOKEN }}
           SHOPIFY_FLAG_THEME_ID: ${{ secrets.SHOPIFY_FLAG_THEME_ID }}
+          SHOPIFY_FLAG_FORCE: 1
         run: |
-          # Desactivar prompts interactivos
-          export SHOPIFY_FLAG_FORCE=1
-
-          # Empuja tus archivos al theme (queda en draft)
           shopify theme push \
             --store $SHOPIFY_FLAG_STORE \
             --password $SHOPIFY_CLI_THEME_TOKEN \
@@ -45,7 +42,6 @@ jobs:
           SHOPIFY_CLI_THEME_TOKEN: ${{ secrets.SHOPIFY_CLI_THEME_TOKEN }}
           SHOPIFY_FLAG_THEME_ID: ${{ secrets.SHOPIFY_FLAG_THEME_ID }}
         run: |
-          # Publica el theme como live
           shopify theme publish \
             --store $SHOPIFY_FLAG_STORE \
             --password $SHOPIFY_CLI_THEME_TOKEN \
