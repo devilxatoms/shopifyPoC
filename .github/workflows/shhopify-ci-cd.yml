@@ -33,8 +33,7 @@ jobs:
             --store $SHOPIFY_FLAG_STORE \
             --password $SHOPIFY_CLI_THEME_TOKEN \
             --theme $SHOPIFY_FLAG_THEME_ID \
-            --allow-live \
-            --json
+            --allow-live
 
       - name: Publish theme (only on main)
         if: github.ref == 'refs/heads/main'
@@ -46,5 +45,4 @@ jobs:
           shopify theme publish \
             --store $SHOPIFY_FLAG_STORE \
             --password $SHOPIFY_CLI_THEME_TOKEN \
-            --theme $SHOPIFY_FLAG_THEME_ID \
-            --json
+            --theme $SHOPIFY_FLAG_THEME_ID 
