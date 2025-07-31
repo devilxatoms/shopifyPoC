@@ -1,6 +1,6 @@
 name: Deploy Shopify Theme
 
-run-name: Deploy Shopify Theme to Different Environments "${{ github.event_name }} - ${{ github.ref }}"
+run-name: Deploy Shopify Theme to Different Environments "${{ github.event_name }} - ${{ github.branch }}"
 
 on:
   push:
