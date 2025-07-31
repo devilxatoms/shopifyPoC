@@ -74,19 +74,22 @@ jobs:
             sarif = JSON.parse(File.read('reports/theme-check.sarif'))
 
             levels = { 'error' => 'error', 'warning' => 'warning', 'info' => 'note', 'style' => 'note' }
-
             rules = {}
-            sarif['runs'][0]['results'] = data.map do |issue|
-              rule_id = issue['check'].to_s
+            results = []
+
+            data.each do |issue|
+              rule_id = issue['check'].to_s.strip
+              rule_id = 'theme-check-generic' if rule_id.empty?
+
               severity = issue['severity'].to_s.downcase
               level = levels[severity] || 'note'
+
               message = issue['message'].to_s.strip
               message = 'Theme Check reported an issue.' if message.empty?
 
-
               file = issue['file'].to_s.strip
-              file = 'unknown_file.liquid' if file.empty?
-              file = file.gsub(%r{^/}, '') # elimina slash inicial si lo hay
+              file = file.gsub(%r{^/}, '')
+              file = 'layout/theme.liquid' if file.empty?
 
               line = issue['line'].to_i > 0 ? issue['line'].to_i : 1
               column = issue['column'].to_i > 0 ? issue['column'].to_i : 1
@@ -97,7 +100,7 @@ jobs:
                 'shortDescription' => { 'text' => message }
               }
 
-              {
+              results << {
                 'ruleId' => rule_id,
                 'level' => level,
                 'message' => { 'text' => message },
@@ -106,7 +109,7 @@ jobs:
                     'physicalLocation' => {
                       'artifactLocation' => {
                         'uri' => file,
-                        'uriBaseId' => '%SRCROOT%' # 💡 importante para que GitHub sepa resolver el path
+                        'uriBaseId' => '%SRCROOT%'
                       },
                       'region' => {
                         'startLine' => line,
@@ -119,8 +122,10 @@ jobs:
             end
 
             sarif['runs'][0]['tool']['driver']['rules'] = rules.values
+            sarif['runs'][0]['results'] = results
             File.write('reports/theme-check.sarif', JSON.pretty_generate(sarif))
           "
+
 
       - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
