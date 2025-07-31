@@ -1,6 +1,6 @@
 name: Deploy Shopify Theme
 
-run-name: Deploy Shopify Theme - $GITHUB_HEAD_REF
+run-name: Deploy Shopify Theme - ${{ github.ref_head }}
 
 on:
   push:
