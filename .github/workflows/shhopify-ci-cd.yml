@@ -21,3 +21,33 @@ jobs:
 
       - name: Install Shopify CLI
         run: npm install -g @shopify/cli
+
+      - name: Push theme to Shopify
+        env:
+          SHOPIFY_FLAG_STORE: ${{ secrets.SHOPIFY_FLAG_STORE }}
+          SHOPIFY_CLI_THEME_TOKEN: ${{ secrets.SHOPIFY_CLI_THEME_TOKEN }}
+          SHOPIFY_FLAG_THEME_ID: ${{ secrets.SHOPIFY_FLAG_THEME_ID }}
+        run: |
+          # Desactivar prompts interactivos
+          export SHOPIFY_FLAG_FORCE=1
+
+          # Empuja tus archivos al theme (queda en draft)
+          shopify theme push \
+            --store $SHOPIFY_FLAG_STORE \
+            --password $SHOPIFY_CLI_THEME_TOKEN \
+            --theme $SHOPIFY_FLAG_THEME_ID \
+            --json
+
+      - name: Publish theme (only on main)
+        if: github.ref == 'refs/heads/main'
+        env:
+          SHOPIFY_FLAG_STORE: ${{ secrets.SHOPIFY_FLAG_STORE }}
+          SHOPIFY_CLI_THEME_TOKEN: ${{ secrets.SHOPIFY_CLI_THEME_TOKEN }}
+          SHOPIFY_FLAG_THEME_ID: ${{ secrets.SHOPIFY_FLAG_THEME_ID }}
+        run: |
+          # Publica el theme como live
+          shopify theme publish \
+            --store $SHOPIFY_FLAG_STORE \
+            --password $SHOPIFY_CLI_THEME_TOKEN \
+            --theme $SHOPIFY_FLAG_THEME_ID \
+            --json
