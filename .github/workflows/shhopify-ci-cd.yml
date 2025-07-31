@@ -80,7 +80,9 @@ jobs:
               rule_id = issue['check'].to_s
               severity = issue['severity'].to_s.downcase
               level = levels[severity] || 'note'
-              message = issue['message'].to_s
+              message = issue['message'].to_s.strip
+              message = 'Theme Check reported an issue.' if message.empty?
+
 
               file = issue['file'].to_s.strip
               file = 'unknown_file.liquid' if file.empty?
